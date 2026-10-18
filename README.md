@@ -1,23 +1,59 @@
-# Roommate Expense Manager
+# 💸 Roommate Expense Manager (Offline-First)
 
-Next.js App Router application with a Supabase-backed API for mobile clients and a protected admin dashboard.
+![Next.js](https://img.shields.io/badge/Next.js-black?style=for-the-badge&logo=next.js&logoColor=white)
+![Flutter](https://img.shields.io/badge/Flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white)
+![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)
 
-## Setup
+A full-stack, offline-first expense management system designed specifically for roommates. It eliminates the hassle of manual calculations, notebook logs, and transparency issues by providing a seamless mobile app for instant logging and a secure web admin panel for advanced debt settlements.
 
-1. Install dependencies with `npm install`.
-2. Copy `.env.example` to `.env.local` and set the Supabase URL, service role key, and a random JWT secret of at least 32 characters.
-3. Run `database/schema.sql` in the Supabase SQL editor.
-4. Run `database/settlement.sql` in the Supabase SQL editor to create the atomic settlement function.
-5. Create the admin and roommate accounts with `npm run setup:users`. The script prompts for their names, emails, and passwords and stores bcrypt hashes. Create the admin with role `admin` and each roommate with role `user`; only `user` accounts are included in expense totals and settlement splits. Run it again with the same email to change an account's password or details.
-6. Start the app with `npm run dev`.
+## ✨ Key Features
 
-Run SQL files in Supabase by opening your project, choosing **SQL Editor**, creating a new query, pasting the contents of the SQL file, and selecting **Run**. Apply `schema.sql` first, followed by `settlement.sql`. The account script needs `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in `.env.local` and should only be run from your own computer. It creates one admin and three roommate accounts; it does not choose or print passwords for you.
+*   **📱 Offline-First Mobile App:** Log expenses instantly even without an internet connection. Data is queued locally via SQLite and synced silently in the background when the network is restored.
+*   **🔄 Background Sync Engine:** Built-in collision prevention using `client_local_id` (UUIDs) to ensure no duplicate entries are sent to the server during network fluctuations.
+*   **⚖️ Smart Settlement Algorithm:** Calculates exactly "Who owes Whom" based on active users and unsettled balances. 
+*   **🛡️ Double-Entry Ledger System:** When expenses are settled, original purchase logs are never deleted. Instead, peer-to-peer debt transactions are recorded to maintain a 100% accurate historical ledger.
+*   **🔐 Role-Based Access Control:** Standard users only use the mobile app, while the 'Admin' has exclusive access to the Web Dashboard to calculate and settle accounts.
 
-The Supabase service role key is used only by server-side code and must not be exposed to browser code.
+## 🛠️ Tech Stack
 
-## API
+### Mobile Application (Client)
+*   **Framework:** Flutter (Dart)
+*   **Local Database:** `sqflite` (SQLite)
+*   **State Management:** Riverpod
+*   **Background Tasks:** `workmanager`
+*   **Security:** `flutter_secure_storage` (JWT handling)
 
-- `POST /api/auth/login` accepts `{ "email": "...", "password": "..." }` and returns a bearer token. Admin logins also receive an HTTP-only dashboard cookie.
-- `POST /api/expenses/sync` accepts an expense array and an `Authorization: Bearer <token>` header. Duplicate `client_local_id` values are ignored.
-- `GET /api/expenses/my` returns the authenticated user's expenses.
-- `POST /api/admin/settle` settles all currently unsettled expenses in one database transaction. It requires the admin cookie.
+### Web Dashboard & API (Backend)
+*   **Framework:** Next.js (App Router)
+*   **Database:** Supabase (PostgreSQL)
+*   **Authentication:** Custom JWT-based Auth
+*   **Deployment:** Vercel
+
+---
+
+## 🏗️ System Architecture
+
+1.  **Data Entry:** Users log expenses in the Flutter App -> Saved to Local SQLite -> Added to Background Sync Queue.
+2.  **API Consumption:** OS triggers `Workmanager` -> App calls Next.js API `POST /api/expenses/sync` -> Data validated via JWT.
+3.  **Data Storage:** Next.js saves data to Supabase (PostgreSQL) `expenses` table.
+4.  **Admin Settlement:** Admin logs into the Next.js Web Dashboard -> Views unsettled ledger -> Clicks "Settle Now" -> Algorithm runs in a DB Transaction -> Updates `expenses` and logs to `settlement_transactions`.
+
+---
+
+## 🚀 Local Development Setup
+
+### 1. Backend & Admin Web (Next.js)
+```bash
+# Clone the repository
+git clone [https://github.com/yourusername/roommate-expense-manager.git](https://github.com/yourusername/roommate-expense-manager.git)
+cd roommate-expense-manager/web-backend
+
+# Install dependencies
+npm install
+
+# Set up environment variables
+cp .env.example .env.local
+# Add your Supabase credentials and JWT Secret in .env.local
+
+# Run the development server
+npm run dev
